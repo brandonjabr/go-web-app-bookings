@@ -12,6 +12,7 @@ It also allows administrators to:
 - Block out reservations on specified dates
 - Get notified about reservations made via email / text
 
+###Specifications:
 - Built in Go
 - Uses the [chi router](https://github.com/go-chi-chi)
 - Uses [Alex Edwards SCS](https://github.com/alexedwards/scs/v2) session management
