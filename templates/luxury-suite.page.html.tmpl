@@ -1,0 +1,30 @@
+{{template "base" .}}
+
+{{define "content"}}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <img src="../static/images/luxury-suite.png" class="img-fluid img-thumbnail mx-auto d-block room-image" alt="room-image"/>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h1 class="text-center mt-4">Luxury Suite</h1>
+                <p>
+                  Your home away from home, set on the majestic waters of the Pacific Ocean! 
+                  Enjoy our highest quality suite. Includes a view of the ocean, balcony, and full kitchen.
+                  Includes high-speed internet free of charge.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col text-center">
+                <a id="check-availability-button" href="/search-availability?room=luxury-suite" class="btn btn-primary">Check Availability</a>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "js"}}
+
+{{end}}
