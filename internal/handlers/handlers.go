@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
+	"github.com/brandonjabr/go-web-app-bookings/internal/forms"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
 	"github.com/brandonjabr/go-web-app-bookings/internal/render"
 )
@@ -52,8 +53,8 @@ func (repo *Repository) SearchAvailability(w http.ResponseWriter, req *http.Requ
 }
 
 func (repo *Repository) PostAvailability(w http.ResponseWriter, req *http.Request) {
-	checkInDate := req.Form.Get("checkindate")
-	checkOutDate := req.Form.Get("checkoutdate")
+	checkInDate := req.Form.Get("check_in_date")
+	checkOutDate := req.Form.Get("check_in_date")
 
 	w.Write([]byte(fmt.Sprintf("Posted to search availability - check in date is %s and check out date is %s", checkInDate, checkOutDate)))
 }
@@ -79,5 +80,66 @@ func (repo *Repository) AvailabilityJSON(w http.ResponseWriter, req *http.Reques
 }
 
 func (repo *Repository) Reservation(w http.ResponseWriter, req *http.Request) {
-	render.RenderTemplate(w, req, "reservation.page.html.tmpl", &models.TemplateData{})
+	var emptyReservation models.Reservation
+	reservationData := make(map[string]interface{})
+	reservationData["reservation"] = emptyReservation
+	render.RenderTemplate(w, req, "reservation.page.html.tmpl", &models.TemplateData{
+		Form:      forms.New(nil),
+		OtherData: reservationData,
+	})
+}
+
+func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	reservation := models.Reservation{
+		FirstName:   req.Form.Get("first_name"),
+		LastName:    req.Form.Get("last_name"),
+		Email:       req.Form.Get("email"),
+		PhoneNumber: req.Form.Get("phone_number"),
+	}
+
+	form := forms.New(req.PostForm)
+
+	form.Required("first_name", "last_name", "email")
+
+	form.IsValidEmail("email")
+
+	if !form.Valid() {
+		reservationData := make(map[string]interface{})
+		reservationData["reservation"] = reservation
+
+		render.RenderTemplate(w, req, "reservation.page.html.tmpl", &models.TemplateData{
+			Form:      form,
+			OtherData: reservationData,
+		})
+		return
+	}
+
+	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
+
+	http.Redirect(w, req, "/reservation-details", http.StatusSeeOther)
+}
+
+func (repo *Repository) ReservationDetails(w http.ResponseWriter, req *http.Request) {
+	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
+	if !ok {
+		repo.AppConfig.Session.Put(req.Context(), "error", "Can't get reservation from session")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	repo.AppConfig.Session.Remove(req.Context(), "reservation")
+
+	reservationData := make(map[string]interface{})
+	reservationData["reservation"] = reservation
+
+	render.RenderTemplate(w, req, "reservation-details.page.html.tmpl", &models.TemplateData{
+		Form:      forms.New(nil),
+		OtherData: reservationData,
+	})
 }

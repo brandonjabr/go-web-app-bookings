@@ -1,5 +1,7 @@
 package models
 
+import "github.com/brandonjabr/go-web-app-bookings/internal/forms"
+
 type TemplateData struct {
 	StringData map[string]string
 	IntData    map[string]int
@@ -9,4 +11,5 @@ type TemplateData struct {
 	Flash      string
 	Warning    string
 	Error      string
+	Form       *forms.Form
 }

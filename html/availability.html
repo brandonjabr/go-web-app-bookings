@@ -61,10 +61,10 @@
                         <div class="col">
                             <div class="form-row" id="date-picker-container">
                                 <div class="col">
-                                    <input class="form-control" type="text" name="checkindate" placeholder="Check-in Date">
+                                    <input class="form-control" type="text" name="check_in_date" placeholder="Check-in Date">
                                 </div>
                                 <div class="col">
-                                    <input class="form-control" type="text" name="checkoutdate" placeholder="Check-out Date">  
+                                    <input class="form-control" type="text" name="check_out_date" placeholder="Check-out Date">  
                                 </div>
                             </div>
                         </div>
@@ -210,13 +210,13 @@
             },
             preConfirm: () => {
               return [
-                document.getElementById("checkindate").value,
-                document.getElementById("checkoutdate").value
+                document.getElementById("check_in_date").value,
+                document.getElementById("check_out_date").value
               ];
             },
             didOpen: () => {
-                document.getElementById("checkindate").removeAttribute("disabled");
-                document.getElementById("checkoutdate").removeAttribute("disabled");
+                document.getElementById("check_in_date").removeAttribute("disabled");
+                document.getElementById("check_out_date").removeAttribute("disabled");
             }
           });
           if (formValues) {
@@ -240,10 +240,10 @@
                 <div class="col">
                   <div class="form-row" id="reservation-dates-modal">
                     <div class="col">
-                      <input disabled required class="form-control" type="text" name="checkindate" id="checkindate" placeholder="Check-in Date">
+                      <input disabled required class="form-control" type="text" name="check_in_date" id="check_in_date" placeholder="Check-in Date">
                     </div>
                     <div class="col">
-                      <input disabled required class="form-control" type="text" name="checkoutdate" id="checkoutdate" placeholder="Check-out Date">
+                      <input disabled required class="form-control" type="text" name="check_out_date" id="check_out_date" placeholder="Check-out Date">
                     </div>
                   </div>
                 </div>

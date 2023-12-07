@@ -110,6 +110,18 @@
         })
       }
 
+      {{with .Error}}
+        notify("{{.}}", "error")
+      {{end}}
+
+      {{with .Flash}}
+        notify("{{.}}", "flash")
+      {{end}}
+
+      {{with .Warning}}
+        notify("{{.}}", "warning")
+      {{end}}
+
       function prompt() {
         let toast = function(content) {
           const {
@@ -186,13 +198,13 @@
             },
             preConfirm: () => {
               return [
-                document.getElementById("checkindate").value,
-                document.getElementById("checkoutdate").value
+                document.getElementById("check_in_date").value,
+                document.getElementById("check_out_date").value
               ];
             },
             didOpen: () => {
-                document.getElementById("checkindate").removeAttribute("disabled");
-                document.getElementById("checkoutdate").removeAttribute("disabled");
+                document.getElementById("check_in_date").removeAttribute("disabled");
+                document.getElementById("check_out_date").removeAttribute("disabled");
             }
           });
           if (formValues) {
