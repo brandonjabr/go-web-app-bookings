@@ -19,6 +19,23 @@ var appConfig config.AppConfig
 var session *scs.SessionManager
 
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	serve := &http.Server{
+		Addr:    PORT,
+		Handler: routes(&appConfig),
+	}
+
+	err = serve.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	gob.Register(models.Reservation{})
 
 	appConfig.Production = false
@@ -44,13 +61,5 @@ func main() {
 	render.NewTemplates(&appConfig)
 	handlers.NewHandlers(repo)
 
-	serve := &http.Server{
-		Addr:    PORT,
-		Handler: routes(&appConfig),
-	}
-
-	err = serve.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return nil
 }
