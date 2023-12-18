@@ -3,11 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
 	"github.com/brandonjabr/go-web-app-bookings/internal/forms"
+	"github.com/brandonjabr/go-web-app-bookings/internal/helpers"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
 	"github.com/brandonjabr/go-web-app-bookings/internal/render"
 )
@@ -72,7 +72,8 @@ func (repo *Repository) AvailabilityJSON(w http.ResponseWriter, req *http.Reques
 
 	out, err := json.MarshalIndent(response, "", "		")
 	if err != nil {
-		log.Println(err)
+		helpers.ServerError(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -92,7 +93,7 @@ func (repo *Repository) Reservation(w http.ResponseWriter, req *http.Request) {
 func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
-		log.Println(err)
+		helpers.ServerError(w, err)
 		return
 	}
 
@@ -128,6 +129,7 @@ func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request
 func (repo *Repository) ReservationDetails(w http.ResponseWriter, req *http.Request) {
 	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
 	if !ok {
+		repo.AppConfig.ErrorLog.Println("can't get reservation from session")
 		repo.AppConfig.Session.Put(req.Context(), "error", "Can't get reservation from session")
 		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return

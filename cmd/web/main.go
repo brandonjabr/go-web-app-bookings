@@ -4,11 +4,13 @@ import (
 	"encoding/gob"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
 	"github.com/brandonjabr/go-web-app-bookings/internal/handlers"
+	"github.com/brandonjabr/go-web-app-bookings/internal/helpers"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
 	"github.com/brandonjabr/go-web-app-bookings/internal/render"
 )
@@ -40,6 +42,9 @@ func run() error {
 
 	appConfig.Production = false
 
+	appConfig.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	appConfig.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -60,6 +65,7 @@ func run() error {
 
 	render.NewTemplates(&appConfig)
 	handlers.NewHandlers(repo)
+	helpers.NewHelpers(&appConfig)
 
 	return nil
 }
