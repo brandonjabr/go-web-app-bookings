@@ -6,21 +6,26 @@ import (
 	"net/http"
 
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
+	"github.com/brandonjabr/go-web-app-bookings/internal/driver"
 	"github.com/brandonjabr/go-web-app-bookings/internal/forms"
 	"github.com/brandonjabr/go-web-app-bookings/internal/helpers"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
 	"github.com/brandonjabr/go-web-app-bookings/internal/render"
+	"github.com/brandonjabr/go-web-app-bookings/internal/repository"
+	"github.com/brandonjabr/go-web-app-bookings/internal/repository/db_repo"
 )
 
 type Repository struct {
 	AppConfig *config.AppConfig
+	DB        repository.DatabaseRepo
 }
 
 var Repo *Repository
 
-func NewRepo(appConfig *config.AppConfig) *Repository {
+func NewRepo(appConfig *config.AppConfig, db *driver.DB) *Repository {
 	return &Repository{
 		AppConfig: appConfig,
+		DB:        db_repo.NewPostgresRepo(db.SQL, appConfig),
 	}
 }
 

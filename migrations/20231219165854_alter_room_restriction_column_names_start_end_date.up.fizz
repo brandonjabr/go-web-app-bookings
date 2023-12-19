@@ -1,0 +1,3 @@
+rename_column("room_restrictions", "check_in_date", "start_date")
+rename_column("room_restrictions", "check_out_date", "end_date")
+rename_column("restrictions", "restriction", "name")

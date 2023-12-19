@@ -9,6 +9,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
+	"github.com/brandonjabr/go-web-app-bookings/internal/driver"
 	"github.com/brandonjabr/go-web-app-bookings/internal/handlers"
 	"github.com/brandonjabr/go-web-app-bookings/internal/helpers"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
@@ -21,10 +22,12 @@ var appConfig config.AppConfig
 var session *scs.SessionManager
 
 func main() {
-	err := run()
+	db, err := run()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer db.SQL.Close()
 
 	serve := &http.Server{
 		Addr:    PORT,
@@ -37,7 +40,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (*driver.DB, error) {
 	gob.Register(models.Reservation{})
 
 	appConfig.Production = false
@@ -53,19 +56,26 @@ func run() error {
 
 	appConfig.Session = session
 
+	db, err := driver.ConnectSQL("host=localhost port=5432 dbname=bookings user=brandonjabr password=")
+	if err != nil {
+		log.Fatal("cannot connect to database")
+		return nil, err
+	}
+
 	templateCache, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("could not create template cache")
+		return nil, err
 	}
 
 	appConfig.TemplateCache = templateCache
 	appConfig.UseCache = false
 
-	repo := handlers.NewRepo(&appConfig)
+	repo := handlers.NewRepo(&appConfig, db)
 
 	render.NewTemplates(&appConfig)
 	handlers.NewHandlers(repo)
 	helpers.NewHelpers(&appConfig)
 
-	return nil
+	return db, nil
 }
