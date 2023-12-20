@@ -14,11 +14,12 @@ import (
 	"github.com/justinas/nosurf"
 )
 
+var TEMPLATE_PATH = "./templates"
+
 var appConfig *config.AppConfig
-var templatePath = "./templates"
 var functions = template.FuncMap{}
 
-func NewTemplates(c *config.AppConfig) {
+func NewRenderer(c *config.AppConfig) {
 	appConfig = c
 }
 
@@ -30,7 +31,7 @@ func AddDefaultData(tmplData *models.TemplateData, req *http.Request) *models.Te
 	return tmplData
 }
 
-func RenderTemplate(w http.ResponseWriter, req *http.Request, tmpl string, tmplData *models.TemplateData) error {
+func Template(w http.ResponseWriter, req *http.Request, tmpl string, tmplData *models.TemplateData) error {
 	var tmplCache map[string]*template.Template
 
 	if appConfig.UseCache {
@@ -63,7 +64,7 @@ func RenderTemplate(w http.ResponseWriter, req *http.Request, tmpl string, tmplD
 func CreateTemplateCache() (map[string]*template.Template, error) {
 	tmplCache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.html.tmpl", templatePath))
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.html.tmpl", TEMPLATE_PATH))
 	if err != nil {
 		return tmplCache, err
 	}
@@ -75,13 +76,13 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 			return tmplCache, err
 		}
 
-		matchingFiles, err := filepath.Glob(fmt.Sprintf("%s/.*.layout.html.tmpl", templatePath))
+		matchingFiles, err := filepath.Glob(fmt.Sprintf("%s/*.layout.html.tmpl", TEMPLATE_PATH))
 		if err != nil {
 			return tmplCache, err
 		}
 
 		if len(matchingFiles) > 0 {
-			tmplSet, err = tmplSet.ParseGlob(fmt.Sprintf("%s/.*.layout.html.tmpl", templatePath))
+			tmplSet, err = tmplSet.ParseGlob(fmt.Sprintf("%s/*.layout.html.tmpl", TEMPLATE_PATH))
 			if err != nil {
 				return tmplCache, err
 			}

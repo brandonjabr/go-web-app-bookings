@@ -19,9 +19,10 @@ import (
 	"github.com/justinas/nosurf"
 )
 
+const TEMPLATE_PATH = "../../templates"
+
 var appConfig config.AppConfig
 var session *scs.SessionManager
-var templatePath = "../../templates"
 var functions = template.FuncMap{}
 
 func getRoutes() http.Handler {
@@ -50,7 +51,7 @@ func getRoutes() http.Handler {
 
 	repo := NewRepo(&appConfig)
 
-	render.NewTemplates(&appConfig)
+	render.NewRenderer(&appConfig)
 	NewHandlers(repo)
 
 	mux := chi.NewRouter()
@@ -96,7 +97,7 @@ func SessionLoad(next http.Handler) http.Handler {
 func CreateTestTemplateCache() (map[string]*template.Template, error) {
 	tmplCache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.html.tmpl", templatePath))
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.html.tmpl", TEMPLATE_PATH))
 	if err != nil {
 		return tmplCache, err
 	}
@@ -108,13 +109,13 @@ func CreateTestTemplateCache() (map[string]*template.Template, error) {
 			return tmplCache, err
 		}
 
-		matchingFiles, err := filepath.Glob(fmt.Sprintf("%s/.*.layout.html.tmpl", templatePath))
+		matchingFiles, err := filepath.Glob(fmt.Sprintf("%s/.*.layout.html.tmpl", TEMPLATE_PATH))
 		if err != nil {
 			return tmplCache, err
 		}
 
 		if len(matchingFiles) > 0 {
-			tmplSet, err = tmplSet.ParseGlob(fmt.Sprintf("%s/.*.layout.html.tmpl", templatePath))
+			tmplSet, err = tmplSet.ParseGlob(fmt.Sprintf("%s/.*.layout.html.tmpl", TEMPLATE_PATH))
 			if err != nil {
 				return tmplCache, err
 			}

@@ -73,7 +73,7 @@ func run() (*driver.DB, error) {
 
 	repo := handlers.NewRepo(&appConfig, db)
 
-	render.NewTemplates(&appConfig)
+	render.NewRenderer(&appConfig)
 	handlers.NewHandlers(repo)
 	helpers.NewHelpers(&appConfig)
 
