@@ -1,7 +1,7 @@
 .my-footer {
     height: 5em;
     color: white;
-    background-color: #0d6efd;
+    background-color: #353a3f;
     margin-top: 1.5em;
     padding: 1em;
     font-size: 80%;
@@ -14,4 +14,14 @@
 
   .datepicker {
     z-index: 10;
+  }
+
+  .search-button {
+    border-color: #3579f6;
+    background-color: #3579f6;
+    color: white;
+  }
+
+  .reservation-header {
+    padding-top: 1em;
   }

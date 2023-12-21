@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/brandonjabr/go-web-app-bookings/internal/config"
 	"github.com/brandonjabr/go-web-app-bookings/internal/driver"
@@ -15,11 +16,17 @@ import (
 	"github.com/brandonjabr/go-web-app-bookings/internal/render"
 	"github.com/brandonjabr/go-web-app-bookings/internal/repository"
 	"github.com/brandonjabr/go-web-app-bookings/internal/repository/db_repo"
+	"github.com/go-chi/chi"
 )
 
 type Repository struct {
 	AppConfig *config.AppConfig
 	DB        repository.DatabaseRepo
+}
+
+type JSONResponse struct {
+	OK      bool   `json:"ok"`
+	Message string `json:"message"`
 }
 
 var Repo *Repository
@@ -60,15 +67,44 @@ func (repo *Repository) SearchAvailability(w http.ResponseWriter, req *http.Requ
 }
 
 func (repo *Repository) PostAvailability(w http.ResponseWriter, req *http.Request) {
-	checkInDate := req.Form.Get("check_in_date")
-	checkOutDate := req.Form.Get("check_in_date")
+	checkInDate, err := format.ParseDate(strings.Replace(req.Form.Get("check_in_date"), "/", "-", -1))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 
-	w.Write([]byte(fmt.Sprintf("Posted to search availability - check in date is %s and check out date is %s", checkInDate, checkOutDate)))
-}
+	checkOutDate, err := format.ParseDate(strings.Replace(req.Form.Get("check_out_date"), "/", "-", -1))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 
-type JSONResponse struct {
-	OK      bool   `json:"ok"`
-	Message string `json:"message"`
+	rooms, err := repo.DB.SearchAvailabilityForAllRooms(checkInDate, checkOutDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	if len(rooms) == 0 {
+		repo.AppConfig.Session.Put(req.Context(), "error", "No availability for searched dates")
+		http.Redirect(w, req, "/search-availability", http.StatusSeeOther)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["rooms"] = rooms
+
+	reservation := models.Reservation{
+		CheckInDate:  checkInDate,
+		CheckOutDate: checkOutDate,
+		RoomID:       0,
+	}
+
+	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
+
+	render.Template(w, req, "select-room.page.html.tmpl", &models.TemplateData{
+		OtherData: data,
+	})
 }
 
 func (repo *Repository) AvailabilityJSON(w http.ResponseWriter, req *http.Request) {
@@ -88,12 +124,32 @@ func (repo *Repository) AvailabilityJSON(w http.ResponseWriter, req *http.Reques
 }
 
 func (repo *Repository) Reservation(w http.ResponseWriter, req *http.Request) {
-	var emptyReservation models.Reservation
+	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(w, errors.New("cannot get reservation from session"))
+	}
+
+	checkInDate, err := format.ParseDateToString(reservation.CheckInDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+
+	checkOutDate, err := format.ParseDateToString(reservation.CheckOutDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+	}
+
+	dateStringMap := make(map[string]string)
+	dateStringMap["check_in_date"] = checkInDate
+	dateStringMap["check_out_date"] = checkOutDate
+
 	reservationData := make(map[string]interface{})
-	reservationData["reservation"] = emptyReservation
+	reservationData["reservation"] = reservation
+
 	render.Template(w, req, "reservation.page.html.tmpl", &models.TemplateData{
-		Form:      forms.New(nil),
-		OtherData: reservationData,
+		Form:       forms.New(nil),
+		StringData: dateStringMap,
+		OtherData:  reservationData,
 	})
 }
 
@@ -104,13 +160,13 @@ func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	checkInDate, err := format.ParseDate(req.Form.Get("check_in_date"))
+	checkInDate, err := format.ParseStringToDate(req.Form.Get("check_in_date"))
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
 	}
 
-	checkOutDate, err := format.ParseDate(req.Form.Get("check_out_date"))
+	checkOutDate, err := format.ParseStringToDate(req.Form.Get("check_out_date"))
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -192,4 +248,24 @@ func (repo *Repository) ReservationDetails(w http.ResponseWriter, req *http.Requ
 		Form:      forms.New(nil),
 		OtherData: reservationData,
 	})
+}
+
+func (repo *Repository) SelectRoom(w http.ResponseWriter, req *http.Request) {
+	roomID, err := strconv.Atoi(chi.URLParam(req, "id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	reservation.RoomID = roomID
+
+	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
+
+	http.Redirect(w, req, "/reservation", http.StatusSeeOther)
 }

@@ -1,17 +1,21 @@
 .my-footer {
-    height: 5em;
-    color: white;
-    background-color: #0d6efd;
-    margin-top: 1.5em;
-    padding: 1em;
-    font-size: 80%;
-  }
+  height: 5em;
+  color: white;
+  background-color: #353a3f;
+  margin-top: 1.5em;
+  padding: 1em;
+  font-size: 80%;
+}
 
-  .room-image {
-    margin-top: 1.5em;
-    max-width: 50%;
-  }
+.room-image {
+  margin-top: 1.5em;
+  max-width: 50%;
+}
 
-  .datepicker {
-    z-index: 10;
-  }
+.datepicker {
+  z-index: 10;
+}
+
+.search-button {
+  color: #3579f6;
+}

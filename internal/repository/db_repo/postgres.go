@@ -83,7 +83,7 @@ func (repo *postgresDBRepo) SearchAvailabilityForAllRooms(startDate, endDate tim
 
 	var rooms []models.Room
 
-	query := `SELECT R.ID R.NAME FROM ROOMS R
+	query := `SELECT R.ID, R.NAME FROM ROOMS R
 				WHERE R.ID NOT IN 
 					(SELECT RR.ROOM_ID FROM ROOM_RESTRICTIONS RR
 						WHERE RR.START_DATE < $1 AND RR.END_DATE > $2)`
