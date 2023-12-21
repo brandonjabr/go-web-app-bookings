@@ -67,13 +67,13 @@ func (repo *Repository) SearchAvailability(w http.ResponseWriter, req *http.Requ
 }
 
 func (repo *Repository) PostAvailability(w http.ResponseWriter, req *http.Request) {
-	checkInDate, err := format.ParseDate(strings.Replace(req.Form.Get("check_in_date"), "/", "-", -1))
+	checkInDate, err := format.ParseStringToDate(strings.Replace(req.Form.Get("check_in_date"), "/", "-", -1))
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
 	}
 
-	checkOutDate, err := format.ParseDate(strings.Replace(req.Form.Get("check_out_date"), "/", "-", -1))
+	checkOutDate, err := format.ParseStringToDate(strings.Replace(req.Form.Get("check_out_date"), "/", "-", -1))
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
