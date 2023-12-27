@@ -19,10 +19,13 @@
                             <td><strong>Last Name:</strong> {{$res.LastName}}</td>
                         </tr>
                         <tr>
-                            <td><strong>Check-in Date:</strong> {{$res.CheckInDate}}</td>
+                            <td><strong>Room:</strong> {{$res.Room.Name}}</td>
                         </tr>
                         <tr>
-                            <td><strong>Check-out Date:</strong> {{$res.CheckOutDate}}</td>
+                            <td><strong>Check-in Date:</strong> {{index .StringData "check_in_date"}}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Check-out Date:</strong> {{index .StringData "check_out_date"}}</td>
                         </tr>
                         <tr>
                             <td><strong>Email:</strong> {{$res.Email}}</td>

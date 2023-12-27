@@ -30,6 +30,8 @@
 {{define "js"}}
     <script>
         const datePickerContainer = document.getElementById("date-picker-container");
-        const dateRangePicker = new DateRangePicker(datePickerContainer, {});
+        const dateRangePicker = new DateRangePicker(datePickerContainer, {
+            minDate: new Date(),
+        });
     </script>
 {{end}}

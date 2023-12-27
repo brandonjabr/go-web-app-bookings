@@ -116,7 +116,9 @@
       })();
 
       const datePickerContainer = document.getElementById("date-picker-container");
-      const dateRangePicker = new DateRangePicker(datePickerContainer, {});
+      const dateRangePicker = new DateRangePicker(datePickerContainer, {
+        minDate: new Date(),
+      });
 
       function notify(msg, type) {
         notie.alert({
@@ -206,6 +208,7 @@
               const reservationDatesModal = document.getElementById("reservation-dates-modal");
               console.log(reservationDatesModal);
               const dateRangePicker = new DateRangePicker(reservationDatesModal, {
+                minDate: new Date(),
               });
             },
             preConfirm: () => {

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -35,6 +34,13 @@ func NewRepo(appConfig *config.AppConfig, db *driver.DB) *Repository {
 	return &Repository{
 		AppConfig: appConfig,
 		DB:        db_repo.NewPostgresRepo(db.SQL, appConfig),
+	}
+}
+
+func NewTestRepo(appConfig *config.AppConfig) *Repository {
+	return &Repository{
+		AppConfig: appConfig,
+		DB:        db_repo.NewTestingRepo(appConfig),
 	}
 }
 
@@ -126,8 +132,21 @@ func (repo *Repository) AvailabilityJSON(w http.ResponseWriter, req *http.Reques
 func (repo *Repository) Reservation(w http.ResponseWriter, req *http.Request) {
 	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
 	if !ok {
-		helpers.ServerError(w, errors.New("cannot get reservation from session"))
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot get reservation from session")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
+		return
 	}
+
+	room, err := repo.DB.GetRoomByID(reservation.RoomID)
+	if err != nil {
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot find room")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	reservation.Room.Name = room.Name
+
+	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
 
 	checkInDate, err := format.ParseDateToString(reservation.CheckInDate)
 	if err != nil {
@@ -156,25 +175,29 @@ func (repo *Repository) Reservation(w http.ResponseWriter, req *http.Request) {
 func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot parse form")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	checkInDate, err := format.ParseStringToDate(req.Form.Get("check_in_date"))
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot parse check in date")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	checkOutDate, err := format.ParseStringToDate(req.Form.Get("check_out_date"))
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot parse check out date")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	roomID, err := strconv.Atoi(req.Form.Get("room_id"))
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "invalid room")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -190,7 +213,7 @@ func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request
 
 	form := forms.New(req.PostForm)
 
-	form.Required("first_name", "last_name", "email", "check_in_date", "check_out_date", "room_id")
+	form.Required("first_name", "last_name", "email")
 
 	form.IsValidEmail("email")
 
@@ -207,25 +230,27 @@ func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request
 
 	newReservationID, err := repo.DB.InsertReservation(reservation)
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot insert reservation")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
+	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
+
 	roomRestriction := models.RoomRestriction{
-		StartDate:     checkInDate,
-		EndDate:       checkOutDate,
-		RoomID:        roomID,
+		StartDate:     reservation.CheckInDate,
+		EndDate:       reservation.CheckOutDate,
+		RoomID:        reservation.RoomID,
 		ReservationID: newReservationID,
 		RestrictionID: 1,
 	}
 
 	err = repo.DB.InsertRoomRestriction(roomRestriction)
 	if err != nil {
-		helpers.ServerError(w, err)
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot insert room restriction")
+		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
-
-	repo.AppConfig.Session.Put(req.Context(), "reservation", reservation)
 
 	http.Redirect(w, req, "/reservation-details", http.StatusSeeOther)
 }
@@ -233,8 +258,7 @@ func (repo *Repository) PostReservation(w http.ResponseWriter, req *http.Request
 func (repo *Repository) ReservationDetails(w http.ResponseWriter, req *http.Request) {
 	reservation, ok := repo.AppConfig.Session.Get(req.Context(), "reservation").(models.Reservation)
 	if !ok {
-		repo.AppConfig.ErrorLog.Println("can't get reservation from session")
-		repo.AppConfig.Session.Put(req.Context(), "error", "Can't get reservation from session")
+		repo.AppConfig.Session.Put(req.Context(), "error", "cannot get reservation from session")
 		http.Redirect(w, req, "/", http.StatusTemporaryRedirect)
 		return
 	}
@@ -244,9 +268,26 @@ func (repo *Repository) ReservationDetails(w http.ResponseWriter, req *http.Requ
 	reservationData := make(map[string]interface{})
 	reservationData["reservation"] = reservation
 
+	checkInDate, err := format.ParseDateToString(reservation.CheckInDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	checkOutDate, err := format.ParseDateToString(reservation.CheckOutDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	dateStringMap := make(map[string]string)
+	dateStringMap["check_in_date"] = checkInDate
+	dateStringMap["check_out_date"] = checkOutDate
+
 	render.Template(w, req, "reservation-details.page.html.tmpl", &models.TemplateData{
-		Form:      forms.New(nil),
-		OtherData: reservationData,
+		Form:       forms.New(nil),
+		StringData: dateStringMap,
+		OtherData:  reservationData,
 	})
 }
 

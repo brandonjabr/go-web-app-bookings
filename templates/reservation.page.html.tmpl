@@ -4,14 +4,21 @@
     <div class="container">
         <div class="row">
             <div class="col-md-6">
-                <h1 class="reservation-header">Make a reservation</h1>
                 {{$res := index .OtherData "reservation"}}
+                <h1 class="reservation-header">Make a Reservation</h1>
+                <p>
+                    <strong>Reservation Details</strong><br>
+                    Room: {{$res.Room.Name}}<br>
+                    Check-in Date: {{index .StringData "check_in_date"}}<br>
+                    Check-out Date: {{index .StringData "check_out_date"}}
+                </p>
                     <form method="POST" action="/reservation" class="needs-validation" novalidate>
                         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-                        <input type="hidden" name="check_in_date" value="{{$res.CheckInDate}}">
-                        <input type="hidden" name="check_out_date" value="{{$res.CheckOutDate}}">
+                        <input type="hidden" name="check_in_date" value="{{index .StringData "check_in_date"}}">
+                        <input type="hidden" name="check_out_date" value="{{index .StringData "check_out_date"}}">
+                        <input type="hidden" name="room_id" value="{{$res.RoomID}}">
 
-                        <div class="form-group mt-5">
+                        <div class="form-group mt-3">
                             <label for="first_name">First Name:</label>
                             {{with .Form.Errors.Get "first_name"}}
                                 <label class="text-danger">{{.}}</label>
@@ -39,21 +46,6 @@
                             {{end}}
                             <input type="text" name="phone_number" id="phone_number" class="form-control {{with .Form.Errors.Get "phone_number"}} is-invalid {{end}}" value="{{$res.PhoneNumber}}" autocomplete="off">
                         </div>
-                        <div class="form-group mt-5">
-                            <label for="check_in_date">Check-in Date:</label>
-                            {{with .Form.Errors.Get "check_in_date"}}
-                                <label class="text-danger">{{.}}</label>
-                            {{end}}
-                            <input type="text" name="check_in_date" id="check_in_date" class="form-control {{with .Form.Errors.Get "check_in_date"}} is-invalid {{end}}" value="{{$res.CheckInDate}}" autocomplete="off">
-                        </div>
-                        <div class="form-group mt-5">
-                            <label for="check_out_date">Check-out Date:</label>
-                            {{with .Form.Errors.Get "check_out_date"}}
-                                <label class="text-danger">{{.}}</label>
-                            {{end}}
-                            <input type="text" name="check_out_date" id="check_out_date" class="form-control {{with .Form.Errors.Get "check_out_date"}} is-invalid {{end}}" value="{{$res.CheckOutDate}}" autocomplete="off">
-                        </div>
-                        <input type="hidden" name="room_id" value="1">
                         <button style="margin-top: 10px; "type="submit" class="btn btn-primary">Make Reservation</button>
                     </form>
             </div>

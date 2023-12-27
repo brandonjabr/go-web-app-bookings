@@ -12,7 +12,7 @@
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand" href="#">Our Bed and Breakfast</a>
+  <a class="navbar-brand" href="/">Our Bed and Breakfast</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -70,6 +70,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker-full.min.js"></script>
     <script src="https://unpkg.com/notie"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/static/js/prompt.js"></script>
 
     {{block "js" .}}
 
@@ -121,105 +122,6 @@
       {{with .Warning}}
         notify("{{.}}", "warning")
       {{end}}
-
-      function prompt() {
-        let toast = function(content) {
-          const {
-            msg = "",
-            icon = "success",
-            position = "top-end"
-          } = content;
-        
-          console.log("creating toast");
-          const Toast = Swal.mixin({
-            toast: true,
-            title: msg,
-            icon: icon,
-            position: position,
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-              toast.onmouseenter = Swal.stopTimer;
-              toast.onmouseleave = Swal.resumeTimer;
-            }
-          });
-
-          Toast.fire({});
-        }
-
-        let success = function(content) {
-          const {
-            msg = "",
-            title = "",
-            footer = ""
-          } = content;
-
-          Swal.fire({
-            icon: "success",
-            title: title,
-            text: msg,
-            footer: footer
-          });
-        }
-
-        let error = function(content) {
-          const {
-            msg = "",
-            title = "",
-            footer = ""
-          } = content;
-
-          Swal.fire({
-            icon: "error",
-            title: title,
-            text: msg,
-            footer: footer
-          });
-        }
-
-        let customHtmlAlert = async function(content) {
-          const {
-            msg = "",
-            title = ""
-          } = content;
-
-          const { value: formValues } = await Swal.fire({
-            title: title,
-            html: msg,
-            backdrop: false,
-            focusConfirm: false,
-            showCancelButton: true,
-            willOpen: () => {
-              const reservationDatesModal = document.getElementById("reservation-dates-modal");
-              console.log(reservationDatesModal);
-              const dateRangePicker = new DateRangePicker(reservationDatesModal, {
-              });
-            },
-            preConfirm: () => {
-              return [
-                document.getElementById("check_in_date").value,
-                document.getElementById("check_out_date").value
-              ];
-            },
-            didOpen: () => {
-                document.getElementById("check_in_date").removeAttribute("disabled");
-                document.getElementById("check_out_date").removeAttribute("disabled");
-            }
-          });
-          if (formValues) {
-            Swal.fire(JSON.stringify(formValues));
-          }
-
-        }
-
-        return {
-          toast: toast,
-          success: success,
-          error: error,
-          customHtmlAlert: customHtmlAlert
-        }
-      }
     </script>
   </body>
 </html>
