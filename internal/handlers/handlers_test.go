@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brandonjabr/go-web-app-bookings/internal/format"
 	"github.com/brandonjabr/go-web-app-bookings/internal/models"
 )
 
@@ -231,7 +233,31 @@ func TestRepository_PostReservation(t *testing.T) {
 	body = fmt.Sprintf("%s&%s", body, "last_name=Johnson")
 	body = fmt.Sprintf("%s&%s", body, "email=john@smith.com")
 	body = fmt.Sprintf("%s&%s", body, "phone_number=1112223333")
-	body = fmt.Sprintf("%s&%s", body, "room_id=invalid")
+	body = fmt.Sprintf("%s&%s", body, "room_id=1")
+
+	req, _ = http.NewRequest("POST", "/reservation", strings.NewReader(body))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	responseRecorder = httptest.NewRecorder()
+
+	handler = http.HandlerFunc(Repo.PostReservation)
+
+	handler.ServeHTTP(responseRecorder, req)
+	if responseRecorder.Code != http.StatusSeeOther {
+		t.Errorf("post reservation handler returned unexpected response code for required field missing: got %d, expected %d", responseRecorder.Code, http.StatusSeeOther)
+	}
+
+	// Test case where inserting reservation fails due to invalid room ID
+	body = "check_in_date=05-10-2050"
+	body = fmt.Sprintf("%s&%s", body, "check_out_date=05-11-2050")
+	body = fmt.Sprintf("%s&%s", body, "first_name=John")
+	body = fmt.Sprintf("%s&%s", body, "last_name=Johnson")
+	body = fmt.Sprintf("%s&%s", body, "email=john@smith.com")
+	body = fmt.Sprintf("%s&%s", body, "phone_number=1112223333")
+	body = fmt.Sprintf("%s&%s", body, "room_id=100")
 
 	req, _ = http.NewRequest("POST", "/reservation", strings.NewReader(body))
 	ctx = getCtx(req)
@@ -245,7 +271,110 @@ func TestRepository_PostReservation(t *testing.T) {
 
 	handler.ServeHTTP(responseRecorder, req)
 	if responseRecorder.Code != http.StatusTemporaryRedirect {
-		t.Errorf("post reservation handler returned unexpected response code for required field missing: got %d, expected %d", responseRecorder.Code, http.StatusTemporaryRedirect)
+		t.Errorf("post reservation handler returned unexpected response code for room does not exist: got %d, expected %d", responseRecorder.Code, http.StatusTemporaryRedirect)
+	}
+}
+
+func TestRepository_ReservationDetails(t *testing.T) {
+	checkInDate, _ := format.ParseStringToDate("05-10-2050")
+	checkOutDate, _ := format.ParseStringToDate("05-11-2050")
+
+	reservation := models.Reservation{
+		FirstName:    "John",
+		LastName:     "Johnson",
+		Email:        "john@smith.com",
+		PhoneNumber:  "1112223333",
+		CheckInDate:  checkInDate,
+		CheckOutDate: checkOutDate,
+		RoomID:       1,
+		Room: models.Room{
+			ID:   1,
+			Name: "Standard Room",
+		},
+	}
+
+	// Test case where reservation is valid
+	req, _ := http.NewRequest("GET", "/reservation-details", nil)
+	ctx := getCtx(req)
+	req = req.WithContext(ctx)
+
+	responseRecorder := httptest.NewRecorder()
+
+	session.Put(ctx, "reservation", reservation)
+
+	handler := http.HandlerFunc(Repo.ReservationDetails)
+
+	handler.ServeHTTP(responseRecorder, req)
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("reservation details handler returned unexpected response code: got %d, expected %d", responseRecorder.Code, http.StatusOK)
+	}
+
+	// Test case where reservation not in session
+	req, _ = http.NewRequest("GET", "/reservation-details", nil)
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	responseRecorder = httptest.NewRecorder()
+
+	handler.ServeHTTP(responseRecorder, req)
+	if responseRecorder.Code != http.StatusTemporaryRedirect {
+		t.Errorf("reservation details handler returned unexpected response code: got %d, expected %d", responseRecorder.Code, http.StatusTemporaryRedirect)
+	}
+}
+
+func TestRepository_AvailabilityJSON(t *testing.T) {
+
+	// Test case where room is available
+	body := "check_in_date=12-20-2023"
+	body = fmt.Sprintf("%s&%s", body, "check_out_date=12-21-2023")
+	body = fmt.Sprintf("%s&%s", body, "room_id=1")
+
+	req, _ := http.NewRequest("POST", "/search-availability-json", strings.NewReader(body))
+	ctx := getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	responseRecorder := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(Repo.AvailabilityJSON)
+
+	handler.ServeHTTP(responseRecorder, req)
+
+	var response JSONResponse
+	err := json.Unmarshal(responseRecorder.Body.Bytes(), &response)
+	if err != nil {
+		t.Error("failed to parse json response from POST to search availability")
+	}
+
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("post search availablity handler returned unexpected response code for rooms are not available: got %d, expected %d", responseRecorder.Code, http.StatusTemporaryRedirect)
+	}
+
+	// Test case where room is not available
+	body = "check_in_date=12-24-2023"
+	body = fmt.Sprintf("%s&%s", body, "check_out_date=12-24-2023")
+	body = fmt.Sprintf("%s&%s", body, "room_id=1")
+
+	req, _ = http.NewRequest("POST", "/search-availability-json", strings.NewReader(body))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	responseRecorder = httptest.NewRecorder()
+
+	handler = http.HandlerFunc(Repo.AvailabilityJSON)
+
+	handler.ServeHTTP(responseRecorder, req)
+
+	err = json.Unmarshal(responseRecorder.Body.Bytes(), &response)
+	if err != nil {
+		t.Error("failed to parse json response from POST to search availability")
+	}
+
+	if responseRecorder.Code != http.StatusOK {
+		t.Errorf("post search availablity handler returned unexpected response code for rooms are not available: got %d, expected %d", responseRecorder.Code, http.StatusTemporaryRedirect)
 	}
 }
 

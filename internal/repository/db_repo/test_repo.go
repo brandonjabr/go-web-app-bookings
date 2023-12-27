@@ -8,6 +8,9 @@ import (
 )
 
 func (repo *testDBRepo) InsertReservation(reservation models.Reservation) (int, error) {
+	if reservation.RoomID > 2 {
+		return 0, errors.New("invalid room ID")
+	}
 	return 0, nil
 }
 
@@ -29,7 +32,7 @@ func (repo *testDBRepo) GetRoomByID(roomID int) (models.Room, error) {
 	var room models.Room
 
 	if roomID > 2 {
-		return room, errors.New("invalid room id")
+		return room, errors.New("invalid room ID")
 	}
 
 	return room, nil
